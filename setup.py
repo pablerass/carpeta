@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from redirector import __version__
+from carpeta import __version__
 from setuptools import setup
 
 
