@@ -30,5 +30,5 @@ setup(
     },
     packages=['carpeta'],
     install_requires=[line for line in open('requirements.txt')],
-    python_requires='>=3.8'
+    python_requires='>=3.10'
 )
