@@ -17,5 +17,5 @@ test:
 	pytest
 
 test-coverage:
-	coverage run -m pytest
+	coverage run --source carpeta -m pytest
 	coverage report -m
