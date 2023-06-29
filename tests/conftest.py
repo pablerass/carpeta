@@ -15,7 +15,7 @@ TEST_FILES_PATH = os.path.join(TEST_PATH, "files")
 
 @pytest.fixture
 def fixture_file():
-    # TUNE: Move to path
+    # TUNE: Move to pathlib
     def path(rel_path: Path | str):
         return os.path.join(TEST_FILES_PATH, rel_path)
 
@@ -23,5 +23,10 @@ def fixture_file():
 
 
 @pytest.fixture
-def card_image(fixture_file):
-    return CardImage(fixture_file('card.png'), size=STANDARD)
+def random_image(fixture_file):
+    return fixture_file('card.png')
+
+
+@pytest.fixture
+def card_image(random_image):
+    return CardImage(random_image, size=STANDARD)
