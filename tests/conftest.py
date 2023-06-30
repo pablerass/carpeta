@@ -1,8 +1,11 @@
 import pytest
 
 import os
+import random
+import tempfile
 
 from pathlib import Path
+from PIL import Image
 
 
 from carpeta.card import CardImage
@@ -23,10 +26,22 @@ def fixture_file():
 
 
 @pytest.fixture
-def random_image(fixture_file):
-    return fixture_file('card.png')
+def random_image():
+    temp_dir = tempfile.mkdtemp()
+    temp_file = Path(temp_dir) / f"{next(tempfile._get_candidate_names())}.png"
+
+    aspect_ratio = random.choice([(3, 2), (4, 3)])
+    width = random.randint(300, 1000)
+    height = int(width * aspect_ratio[1] / aspect_ratio[0])
+
+    image = Image.new('RGB', (width, height), color=(255, 0, 0))
+    image.save(temp_file)
+
+    yield temp_file
+
+    temp_file.unlink()
 
 
 @pytest.fixture
-def card_image(random_image):
+def random_card_image(random_image):
     return CardImage(random_image, size=STANDARD)
