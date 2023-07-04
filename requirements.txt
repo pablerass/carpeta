@@ -2,3 +2,4 @@ reportlab==4.*
 opencv-python==4.*
 pillow==9.*
 pyyaml==6.*
+jsonschema==4.17.*
