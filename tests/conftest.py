@@ -10,7 +10,7 @@ from PIL import Image
 
 
 from carpeta.card import CardImage
-from carpeta.measure import STANDARD
+from carpeta.measure import Size, STANDARD
 
 
 
@@ -31,7 +31,7 @@ def random_image() -> Path:
     temp_dir = Path(tempfile.mkdtemp())
     generated_files = []
 
-    def create_temp_file(subpath: Path = None):
+    def create_temp_file(subpath: Path = None, /, size: Size = None):
         file_name = f"{next(tempfile._get_candidate_names())}.png"
         if subpath:
             full_subpath = temp_dir / subpath
@@ -41,8 +41,12 @@ def random_image() -> Path:
             temp_file = temp_dir / file_name
 
         aspect_ratio = random.choice([(3, 2), (4, 3)])
-        width = random.randint(300, 1000)
-        height = int(width * aspect_ratio[1] / aspect_ratio[0])
+        if size is None:
+            width = random.randint(300, 1000)
+            height = int(width * aspect_ratio[1] / aspect_ratio[0])
+        else:
+            width = int(size.width)
+            height = int(size.height)
 
         image = Image.new('RGB', (width, height), color=(255, 0, 0))
         image.save(temp_file)
