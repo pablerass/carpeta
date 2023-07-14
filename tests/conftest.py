@@ -62,7 +62,7 @@ def random_image() -> Path:
 
 @pytest.fixture
 def random_card_image(random_image) -> CardImage:
-    def create_temp_card_image(subpath: Path = None):
-        return CardImage(random_image(subpath), size=STANDARD)
+    def create_temp_card_image(subpath: Path = None, /, size: Size = STANDARD):
+        return CardImage(random_image(subpath), size=size)
 
     return create_temp_card_image
