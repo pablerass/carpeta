@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-from carpeta import __version__
 from setuptools import setup
 
 
 setup(
     name='carpeta',
-    version=__version__,
+    version='0.1.0b0',
     description="A tool to create print and play card games",
     long_description=open('README.md').read(),
     classifiers=[
@@ -17,10 +16,9 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Topic :: Games/Entertainment :: Board Games',
-        'Topìc :: Printing',
         'Typing :: Typed'
     ],
-    keywords='PnP card board game',
+    keywords='PnP card board game print',
     author='Pablo Muñoz',
     author_email='pablerass@gmail.com',
     url='https://github.com/pablerass/carpeta',
