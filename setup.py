@@ -25,7 +25,7 @@ setup(
     license='LGPLv3',
     entry_points={
         'console_scripts': [
-            'carturli=carpeta.__main__:main',
+            'carpeta=carpeta.__main__:main',
         ],
     },
     packages=['carpeta'],
