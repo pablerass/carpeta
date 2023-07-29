@@ -27,9 +27,24 @@ def fixture_file() -> Path:
 
 
 @pytest.fixture
-def random_image() -> Path:
+def random_image() -> Image.Image:
+    def create_image(size: Size = None):
+        aspect_ratio = random.choice([(3, 2), (4, 3)])
+        if size is None:
+            width = random.randint(300, 1000)
+            height = int(width * aspect_ratio[1] / aspect_ratio[0])
+        else:
+            width = int(size.width)
+            height = int(size.height)
+
+        return Image.new('RGB', (width, height), color=(255, 0, 0))
+
+    return create_image
+
+
+@pytest.fixture
+def random_image_file(random_image) -> Path:
     temp_dir = Path(tempfile.mkdtemp())
-    generated_files = []
 
     def create_temp_file(subpath: Path = None, /, size: Size = None):
         file_name = f"{next(tempfile._get_candidate_names())}.png"
@@ -40,18 +55,8 @@ def random_image() -> Path:
         else:
             temp_file = temp_dir / file_name
 
-        aspect_ratio = random.choice([(3, 2), (4, 3)])
-        if size is None:
-            width = random.randint(300, 1000)
-            height = int(width * aspect_ratio[1] / aspect_ratio[0])
-        else:
-            width = int(size.width)
-            height = int(size.height)
+        random_image(size).save(temp_file)
 
-        image = Image.new('RGB', (width, height), color=(255, 0, 0))
-        image.save(temp_file)
-
-        generated_files.append(temp_file)
         return temp_file
 
     yield create_temp_file
