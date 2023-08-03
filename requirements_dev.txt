@@ -1,3 +1,4 @@
 -r requirements_test.txt
 bumpver
 ipython
+ipdb
