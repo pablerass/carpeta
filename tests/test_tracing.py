@@ -35,6 +35,11 @@ def test_tracer(random_image):
     assert tracer.traces[1].line_number == 11
     assert tracer.traces[0].timestamp < tracer.traces[1].timestamp
 
+    assert len(tracer.streams) == 1
+    tracer_process_image(random_image(), tracer)
+    assert len(tracer.streams) == 2
+    assert all(len(traces) == 2 for traces in tracer.streams.values())
+
 
 def test_logging(random_image):
     tracer = Tracer()
@@ -54,3 +59,8 @@ def test_logging(random_image):
     assert tracer.traces[1].function_name == 'logger_process_image'
     assert tracer.traces[1].line_number == 19
     assert tracer.traces[0].timestamp < tracer.traces[1].timestamp
+
+    assert len(tracer.streams) == 1
+    logger_process_image(random_image())
+    assert len(tracer.streams) == 2
+    assert all(len(traces) == 2 for traces in tracer.streams.values())
