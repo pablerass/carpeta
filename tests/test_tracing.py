@@ -39,8 +39,13 @@ def test_tracer(random_image):
     tracer_process_image(random_image(), tracer)
     assert len(tracer.streams) == 2
     assert all(len(traces) == 2 for traces in tracer.streams.values())
+    assert tracer.streams[1][0].previous is None
+    assert tracer.streams[2][0].previous is None
+    assert tracer.streams[1][1].previous == tracer.streams[1][0]
+    assert tracer.streams[2][1].previous == tracer.streams[2][0]
 
 
+# TUNE: This probably could be implemented as parametrization of the previous test
 def test_logging(random_image):
     tracer = Tracer()
     handler = ImageHandler(tracer, logging.INFO)
@@ -64,3 +69,7 @@ def test_logging(random_image):
     logger_process_image(random_image())
     assert len(tracer.streams) == 2
     assert all(len(traces) == 2 for traces in tracer.streams.values())
+    assert tracer.streams[1][0].previous is None
+    assert tracer.streams[2][0].previous is None
+    assert tracer.streams[1][1].previous == tracer.streams[1][0]
+    assert tracer.streams[2][1].previous == tracer.streams[2][0]
