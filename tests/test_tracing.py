@@ -2,7 +2,7 @@ import logging
 
 from PIL import Image
 
-from carpeta.processing import Tracer, ImageHandler
+from carpeta.tracing import Tracer, ImageHandler
 
 
 def tracer_process_image(image: Image.Image, tracer: Tracer):
@@ -26,23 +26,22 @@ def test_tracer(random_image):
     image = random_image()
     processed_image = tracer_process_image(image, tracer)
 
-    assert len(tracer.traces) == 2
-    assert tracer.traces[0].image == image
-    assert tracer.traces[0].function_name == 'tracer_process_image'
-    assert tracer.traces[0].line_number == 9
-    assert tracer.traces[1].image == processed_image
-    assert tracer.traces[1].function_name == 'tracer_process_image'
-    assert tracer.traces[1].line_number == 11
-    assert tracer.traces[0].timestamp < tracer.traces[1].timestamp
+    assert tracer[0][0].image == image
+    assert tracer[0][0].function_name == 'tracer_process_image'
+    assert tracer[0][0].line_number == 9
+    assert tracer[0][1].image == processed_image
+    assert tracer[0][1].function_name == 'tracer_process_image'
+    assert tracer[0][1].line_number == 11
+    assert tracer[0][0].timestamp < tracer[0][1].timestamp
 
-    assert len(tracer.streams) == 1
+    assert len(tracer) == 1
     tracer_process_image(random_image(), tracer)
-    assert len(tracer.streams) == 2
-    assert all(len(traces) == 2 for traces in tracer.streams.values())
-    assert tracer.streams[1][0].previous is None
-    assert tracer.streams[2][0].previous is None
-    assert tracer.streams[1][1].previous == tracer.streams[1][0]
-    assert tracer.streams[2][1].previous == tracer.streams[2][0]
+    assert len(tracer) == 2
+    assert all(len(trace) == 2 for trace in tracer)
+    assert tracer[0][0].previous is None
+    assert tracer[1][0].previous is None
+    assert tracer[0][1].previous == tracer[0][0]
+    assert tracer[1][1].previous == tracer[1][0]
 
 
 # TUNE: This probably could be implemented as parametrization of the previous test
@@ -56,20 +55,23 @@ def test_logging(random_image):
     image = random_image()
     processed_image = logger_process_image(image)
 
-    assert len(tracer.traces) == 2
-    assert tracer.traces[0].image == image
-    assert tracer.traces[0].function_name == 'logger_process_image'
-    assert tracer.traces[0].line_number == 17
-    assert tracer.traces[1].image == processed_image
-    assert tracer.traces[1].function_name == 'logger_process_image'
-    assert tracer.traces[1].line_number == 19
-    assert tracer.traces[0].timestamp < tracer.traces[1].timestamp
+    assert tracer[0][0].image == image
+    assert tracer[0][0].function_name == 'logger_process_image'
+    assert tracer[0][0].line_number == 17
+    assert tracer[0][1].image == processed_image
+    assert tracer[0][1].function_name == 'logger_process_image'
+    assert tracer[0][1].line_number == 19
+    assert tracer[0][0].timestamp < tracer[0][1].timestamp
 
-    assert len(tracer.streams) == 1
+    assert len(tracer) == 1
     logger_process_image(random_image())
-    assert len(tracer.streams) == 2
-    assert all(len(traces) == 2 for traces in tracer.streams.values())
-    assert tracer.streams[1][0].previous is None
-    assert tracer.streams[2][0].previous is None
-    assert tracer.streams[1][1].previous == tracer.streams[1][0]
-    assert tracer.streams[2][1].previous == tracer.streams[2][0]
+    assert len(tracer) == 2
+    assert all(len(trace) == 2 for trace in tracer)
+    assert tracer[0][0].previous is None
+    assert tracer[1][0].previous is None
+    assert tracer[0][1].previous == tracer[0][0]
+    assert tracer[1][1].previous == tracer[1][0]
+
+
+def test_trace_image_file(random_image_file):
+    pass
