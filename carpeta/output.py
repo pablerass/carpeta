@@ -21,21 +21,22 @@ class TraceOutput(ABC):
 
 
 class TraceHTMLOutput(TraceOutput):
-    def create(self, output_dir: Path | str):
+    def create(self, output_path: Path | str):
         PRISM_VERSION = "1.29.0"
         PRISM_URL = f"https://cdnjs.cloudflare.com/ajax/libs/prism/{PRISM_VERSION}"
 
         BOOTSTRAP_VERSION = "5.2.3"
         BOOTSTRAP_URL = f"https://cdn.jsdelivr.net/npm/bootstrap@{BOOTSTRAP_VERSION}/dist"
 
-        if isinstance(output_dir, str):
-            output_dir = Path(output_dir)
+        if isinstance(output_path, str):
+            output_path = Path(output_path)
 
         # TODO: This is a bad way to avoid errors when no path is specified
-        if output_dir is None:
+        if output_path is None:
             return
 
-        with output_dir.open('w') as output_file:
+        # TODO: Generate html vía template
+        with output_path.open('w') as output_file:
             output_file.write(f"""<!DOCTYPE html>
 <html>
     <head>
@@ -48,28 +49,32 @@ class TraceHTMLOutput(TraceOutput):
     </head>
     <body>""")
             output_file.write(f"""
-        <ul class="nav nav-tabs mb-{len(self._traces)}" id="ex1" role="tablist">""")
+        <ul class="nav nav-tabs mb-{len(self._traces)}" id="trace" role="tablist">""")
             for n, trace in enumerate(self._traces):
+                if trace.image_file is not None:
+                    file_name = trace.image_file.relative_to(Path.cwd())
+                else:
+                    file_name = "Unknown"
                 output_file.write(f"""
             <li class="nav-item" role="presentation">
                 <a class="nav-link{ " active" if not n else ""}"
-                   id="ex1-tab-{n+1}"
-                   data-mdb-toggle="tab"
-                   href="#ex1-tabs-{n+1}"
+                   id="trace-tab-{n+1}"
+                   data-bs-toggle="tab"
+                   data-bs-target="#trace-tabs-{n+1}"
                    role="tab"
-                   aria-controls="ex1-tabs-{n+1}"
-                   aria-selected="{"true" if not n else "false"}">{trace.image_file.relative_to(Path.cwd())}
+                   aria-controls="trace-tabs-{n+1}"
+                   aria-selected="{"true" if not n else "false"}">{file_name}
                 </a>
             </li>""")
             output_file.write("""
         </ul>
-        <div class="tab-content" id="ex1-content">""")
+        <div class="tab-content" id="trace-content">""")
             for n, trace in enumerate(self._traces):
                 output_file.write(f"""
             <div class="tab-pane fade{ " show active" if not n else ""}"
-                 id="ex1-tabs-{n+1}"
+                 id="trace-tabs-{n+1}"
                  role="tabpanel"
-                 aria-labelledby="ex1-tab-{n+1}">""")
+                 aria-labelledby="trace-tab-{n+1}">""")
                 for record in trace:
                     image_buffer = io.BytesIO()
                     record.image.save(image_buffer, format="JPEG")
@@ -79,6 +84,8 @@ class TraceHTMLOutput(TraceOutput):
                 <pre><code class="language-python line-numbers">{record.code}</code></pre>
                 <img src="data:image/jpeg;base64,{base64_image.decode("utf-8")}" />
                 <br/>""")
+                output_file.write("""
+            </div>""")
             output_file.write("""
         </div>""")
             output_file.write("""

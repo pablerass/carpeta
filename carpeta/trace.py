@@ -149,12 +149,12 @@ class Tracer:
         # TODO: This aproach does not work with loops or with multiple executions of the same function
         # TUNE; There must be a more pythonic way of doing this
         stream_number = self.__last_trace[source_file, line_number, thread_id]
-        self.__last_trace[source_file, line_number, thread_id] = \
-            self.__last_trace[source_file, line_number, thread_id] + 1
-
         previous_trace = None
         if stream_number in self.__traces:
             previous_trace = self.__traces[stream_number][-1]
+
+        self.__last_trace[source_file, line_number, thread_id] = \
+            self.__last_trace[source_file, line_number, thread_id] + 1
 
         trace = Record(
             image,
