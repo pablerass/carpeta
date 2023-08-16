@@ -51,10 +51,6 @@ class TraceHTMLOutput(TraceOutput):
             output_file.write(f"""
         <ul class="nav nav-tabs mb-{len(self._traces)}" id="trace" role="tablist">""")
             for n, trace in enumerate(self._traces):
-                if trace.image_file is not None:
-                    file_name = trace.image_file.relative_to(Path.cwd())
-                else:
-                    file_name = "Unknown"
                 output_file.write(f"""
             <li class="nav-item" role="presentation">
                 <a class="nav-link{ " active" if not n else ""}"
@@ -63,7 +59,7 @@ class TraceHTMLOutput(TraceOutput):
                    data-bs-target="#trace-tabs-{n+1}"
                    role="tab"
                    aria-controls="trace-tabs-{n+1}"
-                   aria-selected="{"true" if not n else "false"}">{file_name}
+                   aria-selected="{"true" if not n else "false"}">{trace.name}
                 </a>
             </li>""")
             output_file.write("""

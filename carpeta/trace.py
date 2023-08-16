@@ -5,7 +5,6 @@ import inspect
 import numpy as np
 import threading
 
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
@@ -19,7 +18,7 @@ class Record:
                  thread_id: int = None):
         if isinstance(image, np.ndarray):
             image = Image.fromarray(cv.cvtColor(image, cv.COLOR_BGR2RGB))
-        self.__image = image.copy()
+        self.__image = image
 
         if timestamp is None:
             timestamp = datetime.now()
@@ -28,8 +27,6 @@ class Record:
         self.__function_name = function_name
         self.__source_file = source_file
         self.__line_number = line_number
-        if thread_id is None:
-            thread_id = threading.get_native_id()
         self.__thread_id = thread_id
         self.__previous = previous
 
@@ -102,12 +99,13 @@ class Record:
 
 
 class Trace:
-    def __init__(self):
+    def __init__(self, name: str):
+        self.__name = name
         self.__traces = []
 
     @property
-    def image_file(self) -> Path:
-        return self.__traces[0].image_file
+    def name(self) -> str:
+        return self.__name
 
     @property
     def thread_id(self) -> int:
@@ -126,15 +124,17 @@ class Trace:
     def __iter__(self) -> Iterable[Record]:
         return (trace for trace in self.__traces)
 
+    def items(self) -> tuple(Record):
+        return tuple(self)
+
 
 class Tracer:
-    def __init__(self):
-        self.__last_trace = defaultdict(int)
-        self.__traces = defaultdict(Trace)
+    def __init__(self,):
+        self.__last_thread_trace = {}
+        self.__traces = []
 
     def record(self, image: Image.Image | np.ndarray, /, timestamp: datetime = None,
-               function_name: str = None, source_file: str = None, line_number: int = None,
-               thread_id: int = None) -> None:
+               function_name: str = None, source_file: str = None, line_number: int = None) -> None:
         # TUNE: I tried to use frame info but logging does not return it,
         # maybe there is a better way
         if function_name is None or source_file is None or line_number is None:
@@ -146,17 +146,20 @@ class Tracer:
 
         thread_id = threading.get_native_id()
 
-        # TODO: This aproach does not work with loops or with multiple executions of the same function
-        # TUNE; There must be a more pythonic way of doing this
-        stream_number = self.__last_trace[source_file, line_number, thread_id]
-        previous_trace = None
-        if stream_number in self.__traces:
-            previous_trace = self.__traces[stream_number][-1]
+        # TODO: Replace this with trace generator
+        if hasattr(image, 'filename'):
+            try:
+                trace_name = str(Path(image.filename).relative_to(Path.cwd()))
+            except ValueError:
+                trace_name = str(Path(image.filename))
+            trace = Trace(name=trace_name)
+            self.__traces.append(trace)
+            self.__last_thread_trace[thread_id] = trace
+            previous_trace = None
+        else:
+            previous_trace = self.__last_thread_trace[thread_id][-1]
 
-        self.__last_trace[source_file, line_number, thread_id] = \
-            self.__last_trace[source_file, line_number, thread_id] + 1
-
-        trace = Record(
+        record = Record(
             image,
             timestamp,
             previous_trace,
@@ -165,14 +168,13 @@ class Tracer:
             line_number=line_number,
             thread_id=thread_id
         )
-
-        self.__traces[stream_number].add(trace)
+        self.__last_thread_trace[thread_id].add(record)
 
     def __len__(self):
         return len(self.__traces)
 
-    def __getitem__(self, key) -> Record:
+    def __getitem__(self, key) -> Trace:
         return self.__traces[key]
 
-    def __iter__(self) -> Iterable[Record]:
-        return (trace for trace in self.__traces.values())
+    def __iter__(self) -> Iterable[Trace]:
+        return (trace for trace in self.__traces)
