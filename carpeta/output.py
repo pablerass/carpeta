@@ -9,7 +9,7 @@ from .trace import Trace
 
 class TraceOutput(ABC):
     def __init__(self, traces: list[Trace]):
-        self._traces = traces
+        self._traces = sorted(traces, key=lambda x: x.name)
 
     @property
     def traces(self) -> tuple[Trace]:
