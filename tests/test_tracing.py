@@ -44,7 +44,7 @@ def test_tracer(random_image_file):
     assert len(tracer) == 1
     image = Image.open(random_image_file())
     processed_image = tracer_process_image(image, tracer)
-    reprocessed_image = tracer_reprocess_image(processed_image, tracer)
+    tracer_reprocess_image(processed_image, tracer)
     assert len(tracer) == 2
     assert len(tracer[0]) == 2
     assert len(tracer[1]) == 4
@@ -81,11 +81,11 @@ def test_trace_image_file(random_image_file):
 
     image_file_1 = random_image_file()
     image_1 = Image.open(image_file_1)
-    processed_image_1 = tracer_process_image(image_1, tracer)
+    tracer_process_image(image_1, tracer)
 
     image_file_2 = random_image_file()
     image_2 = Image.open(image_file_2)
-    processed_image_2 = tracer_process_image(image_2, tracer)
+    tracer_process_image(image_2, tracer)
 
     assert tracer[0][0].image_file == image_file_1
     assert tracer[0][1].image_file == image_file_1

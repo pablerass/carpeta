@@ -38,7 +38,7 @@ class Record:
             else:
                 self.__image_file = None
 
-        self.__code = None
+        self.__code_lines = None
 
     @property
     def image(self) -> Image.Image:
@@ -73,29 +73,30 @@ class Record:
         return self.__thread_id
 
     @property
-    def code(self) -> str:
-        if self.__code is None:
+    def code_lines(self) -> tuple[str]:
+        if self.__code_lines is None:
             # TUNE: The code can change during execution
             with Path(self.source_file).open('r') as file:
                 file_code = file.readlines()
 
             last_line = self.line_number
             if self.previous is None or self.function_name != self.previous.function_name:
-                # TODO: Add calling function definition
                 first_line = last_line - 1
             else:
                 first_line = self.previous.line_number
             trace_code_lines = file_code[first_line:last_line]
 
-            # Code formatting or adjustments
+            # TODO: Remove all initial empty lines, not only the first
             if not trace_code_lines[0].strip():
                 del trace_code_lines[0]
-            # FIXME: This does not comment lines propery, it should keep align
-            # trace_code_lines[-1] = f"# {trace_code_lines[-1]}"
 
-            self.__code = ''.join(trace_code_lines)
+            self.__code_lines = tuple(trace_code_lines)
 
-        return self.__code
+        return self.__code_lines
+
+    @property
+    def code(self) -> str:
+        return ''.join(self.code_lines).strip()
 
 
 class Trace:
@@ -149,10 +150,10 @@ class Tracer:
         # TODO: Replace this with trace generator
         if hasattr(image, 'filename'):
             try:
-                trace_name = str(Path(image.filename).relative_to(Path.cwd()))
+                trace_name = Path(image.filename).relative_to(Path.cwd())
             except ValueError:
-                trace_name = str(Path(image.filename))
-            trace = Trace(name=trace_name)
+                trace_name = Path(image.filename)
+            trace = Trace(name=trace_name.stem)
             self.__traces.append(trace)
             self.__last_thread_trace[thread_id] = trace
             previous_trace = None

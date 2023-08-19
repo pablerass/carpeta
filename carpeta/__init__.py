@@ -1,9 +1,9 @@
 """Package with trace image processing functionality."""
 from .trace import Tracer
-from .output import TraceOutput, TraceHTMLOutput, TraceNotebookOutput
+from .output import trace_output
 from .logging import ImageHandler
 
 
 __all__ = [
-    Tracer, TraceOutput, TraceHTMLOutput, TraceNotebookOutput, ImageHandler
+    Tracer, trace_output, ImageHandler
 ]
