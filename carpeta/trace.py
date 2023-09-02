@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import cv2 as cv
+import io
 import inspect
 import numpy as np
 import threading
@@ -38,6 +40,7 @@ class Record:
             else:
                 self.__image_file = None
 
+        self.__base64_image = None
         self.__code_lines = None
 
     @property
@@ -45,11 +48,20 @@ class Record:
         return self.__image
 
     @property
+    def data_uri_image(self) -> bytes:
+        if self.__base64_image is not None:
+            image_buffer = io.BytesIO()
+            self.image.save(image_buffer, format="PNG")
+            self.__base64_image = f"data:image/png;{base64,base64.b64encode(image_buffer.getvalue())}"
+
+        return self.__base64_image
+
+    @property
     def image_file(self) -> Path | None:
         return self.__image_file
 
     @property
-    def previous(self) -> Record:
+    def previous(self) -> Record | None:
         return self.__previous
 
     @property
@@ -90,19 +102,40 @@ class Record:
             if not trace_code_lines[0].strip():
                 del trace_code_lines[0]
 
-            self.__code_lines = tuple(trace_code_lines)
+            self.__code_lines = tuple(t.rstrip() for t in trace_code_lines)
 
         return self.__code_lines
 
     @property
     def code(self) -> str:
-        return ''.join(self.code_lines).strip()
+        return '\n'.join(self.code_lines)
+
+    def __getstate__(self) -> dict:
+        record_dict = {
+            'image': self.data_uri_image,
+            # TODO: Review iso format and timezone management
+            'timestamp': self.timestamp.isoformat(),
+            'code_lines': self.code_lines
+        }
+
+        if self.image_file is not None:
+            record_dict |= {'image_file': str(self.image_file)}
+        if self.function_name is not None:
+            record_dict |= {'function_name': self.function_name}
+        if self.source_file is not None:
+            record_dict |= {'source_file': self.source_file}
+        if self.line_number is not None:
+            record_dict |= {'line_number': self.line_number}
+        if self.thread_id is not None:
+            record_dict |= {'thread_id': self.thread_id}
+
+        return record_dict
 
 
 class Trace:
     def __init__(self, name: str):
         self.__name = name
-        self.__traces = []
+        self.__records = []
 
     @property
     def name(self) -> str:
@@ -111,22 +144,28 @@ class Trace:
     @property
     def thread_id(self) -> int:
         # TUNE: Not sure if this property should live here
-        return self.__traces[0].thread_id
+        return self.__records[0].thread_id
 
-    def add(self, trace: Record):
-        self.__traces.append(trace)
+    def add(self, record: Record):
+        self.__records.append(record)
 
     def __len__(self):
-        return len(self.__traces)
+        return len(self.__records)
 
     def __getitem__(self, key) -> Record:
-        return self.__traces[key]
+        return self.__records[key]
 
     def __iter__(self) -> Iterable[Record]:
-        return (trace for trace in self.__traces)
+        return (record for record in self.__records)
 
     def items(self) -> tuple(Record):
         return tuple(self)
+
+    def __getstate__(self) -> dict:
+        return {
+            'name': self.name,
+            'records': self.__records,
+        }
 
 
 class Tracer:

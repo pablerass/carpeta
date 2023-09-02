@@ -1,15 +1,13 @@
-import base64
-import io
-# import json
 import nbformat as nbf
-# import yaml
+import yaml
 
 from pathlib import Path
+from typing import Callable
 
 from .trace import Trace
 
 
-def _trace_html_output(traces: list[Trace], output_file: Path | str):
+def trace_html_output(traces: list[Trace], output_file: Path):
     PRISM_VERSION = "1.29.0"
     PRISM_URL = f"https://cdnjs.cloudflare.com/ajax/libs/prism/{PRISM_VERSION}"
 
@@ -53,13 +51,10 @@ def _trace_html_output(traces: list[Trace], output_file: Path | str):
              role="tabpanel"
              aria-labelledby="trace-tab-{n+1}">""")
             for record in trace:
-                image_buffer = io.BytesIO()
-                record.image.save(image_buffer, format="JPEG")
-                base64_image = base64.b64encode(image_buffer.getvalue())
                 # TODO: Add line numbers in code, this approach does not work
                 output_file.write(f"""
             <pre><code class="language-python line-numbers">{record.code}</code></pre>
-            <img src="data:image/jpeg;base64,{base64_image.decode("utf-8")}" />
+            <img src="{record.data_uri_image}" />
             <br/>""")
             output_file.write("""
         </div>""")
@@ -70,17 +65,12 @@ def _trace_html_output(traces: list[Trace], output_file: Path | str):
 </html>""")
 
 
-def _trace_json_output(traces: list[Trace], output_file: Path | str):
-    # TODO: Implement JSON output
-    pass
+def trace_yaml_output(traces: list[Trace], output_file: Path):
+    with output_file.open('w') as o:
+        yaml.dump(list(traces), o)
 
 
-def _trace_yaml_output(traces: list[Trace], output_file: Path | str):
-    # TODO: Implement YAML output
-    pass
-
-
-def _trace_notebook_output(traces: list[Trace], output_dir: Path | str):
+def trace_notebook_output(traces: list[Trace], output_dir: Path):
     # TODO: Include required imports
     # TODO: Load image in the first cell
     # TODO: Comment logging lines
@@ -111,12 +101,10 @@ def trace_output(traces: list[Trace], output_path: Path | str):
 
     match output_path:
         case Path(suffix='.html'):
-            _trace_html_output(traces, output_path)
-        case Path(suffix='.json'):
-            _trace_json_output(traces, output_path)
+            trace_html_output(traces, output_path)
         case Path(suffix='.yml') | Path(suffix='.yaml'):
-            _trace_yaml_output(traces, output_path)
+            trace_yaml_output(traces, output_path)
         case Path(suffix=''):
-            _trace_notebook_output(traces, output_path)
+            trace_notebook_output(traces, output_path)
         case _:
             raise ValueError('Unable to identify output format in output_path')
