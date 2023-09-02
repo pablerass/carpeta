@@ -16,16 +16,9 @@ class ImageHandler(Handler):
         images = []
         timestamp = datetime.fromtimestamp(record.created)
 
-        # Register only the first found image
-        if isinstance(record.msg, Image.Image) or isinstance(record.msg, np.ndarray):
-            images.append(record.msg)
-        for arg in record.args:
-            if isinstance(arg, Image.Image) or isinstance(arg, np.ndarray):
-                images.append(arg)
-
-        for image in images:
+        if hasattr(record, 'trace'):
             self.__tracer.record(
-                image,
+                record.trace,
                 timestamp=timestamp,
                 function_name=record.funcName,
                 source_file=record.pathname,
