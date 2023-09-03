@@ -2,7 +2,6 @@ import nbformat as nbf
 import yaml
 
 from pathlib import Path
-from typing import Callable
 
 from .trace import Trace
 
@@ -15,6 +14,7 @@ def trace_html_output(traces: list[Trace], output_file: Path):
     BOOTSTRAP_URL = f"https://cdn.jsdelivr.net/npm/bootstrap@{BOOTSTRAP_VERSION}/dist"
 
     # TODO: Generate html vía template
+    # TODO: Properly format margins
     with output_file.open('w') as output_file:
         output_file.write(f"""<!DOCTYPE html>
 <html>
@@ -52,6 +52,9 @@ def trace_html_output(traces: list[Trace], output_file: Path):
              aria-labelledby="trace-tab-{n+1}">""")
             for record in trace:
                 # TODO: Add line numbers in code, this approach does not work
+                if record.message:
+                    output_file.write(f"""
+            <h5>{record.message}</h5>""")
                 output_file.write(f"""
             <pre><code class="language-python line-numbers">{record.code}</code></pre>
             <img src="{record.data_uri_image}" />

@@ -21,9 +21,9 @@ def tracer_reprocess_image(image: Image.Image, tracer: Tracer):
 
 def logger_process_image(image: Image.Image):
     logger = logging.getLogger('logger_process_image')
-    logger.info(image)
+    logger.info("", extra={'trace': image})
     bw_image = image.convert("L")
-    logger.info('Image %s', bw_image)
+    logger.info("", extra={'trace': bw_image})
     return bw_image
 
 

@@ -16,8 +16,8 @@ from typing import Iterable
 class Record:
     # TUNE: This could be applied to any type of object
     def __init__(self, image: Image.Image | np.ndarray, timestamp: datetime = None, previous: Record = None, /,
-                 function_name: str = None, source_file: str | Path = None, line_number: int = None,
-                 thread_id: int = None):
+                 message: str = None, function_name: str = None, source_file: str | Path = None,
+                 line_number: int = None, thread_id: int = None):
         if isinstance(image, np.ndarray):
             image = Image.fromarray(cv.cvtColor(image, cv.COLOR_BGR2RGB))
         self.__image = image
@@ -31,6 +31,7 @@ class Record:
         self.__line_number = line_number
         self.__thread_id = thread_id
         self.__previous = previous
+        self.__message = message
 
         try:
             self.__image_file = Path(image.filename)
@@ -40,7 +41,7 @@ class Record:
             else:
                 self.__image_file = None
 
-        self.__base64_image = None
+        self.__data_uri_image = None
         self.__code_lines = None
 
     @property
@@ -49,12 +50,13 @@ class Record:
 
     @property
     def data_uri_image(self) -> bytes:
-        if self.__base64_image is not None:
+        if self.__data_uri_image is None:
             image_buffer = io.BytesIO()
             self.image.save(image_buffer, format="PNG")
-            self.__base64_image = f"data:image/png;{base64,base64.b64encode(image_buffer.getvalue())}"
+            self.__data_uri_image = \
+                f"data:image/png;base64,{base64.b64encode(image_buffer.getvalue()).decode('UTF-8')}"
 
-        return self.__base64_image
+        return self.__data_uri_image
 
     @property
     def image_file(self) -> Path | None:
@@ -67,6 +69,10 @@ class Record:
     @property
     def timestamp(self) -> datetime:
         return self.__timestamp
+
+    @property
+    def message(self) -> str | None:
+        return self.__message
 
     @property
     def function_name(self) -> str | None:
@@ -87,7 +93,7 @@ class Record:
     @property
     def code_lines(self) -> tuple[str]:
         if self.__code_lines is None:
-            # TUNE: The code can change during execution
+            # TUNE: The code can change during execution, maybe this should not be lazy
             with Path(self.source_file).open('r') as file:
                 file_code = file.readlines()
 
@@ -118,6 +124,8 @@ class Record:
             'code_lines': self.code_lines
         }
 
+        if self.message is not None:
+            record_dict |= {'image_file': self.message}
         if self.image_file is not None:
             record_dict |= {'image_file': str(self.image_file)}
         if self.function_name is not None:
@@ -174,7 +182,8 @@ class Tracer:
         self.__traces = []
 
     def record(self, image: Image.Image | np.ndarray, /, timestamp: datetime = None,
-               function_name: str = None, source_file: str = None, line_number: int = None) -> None:
+               message: str = None, function_name: str = None, source_file: str = None,
+               line_number: int = None) -> None:
         # TUNE: I tried to use frame info but logging does not return it,
         # maybe there is a better way
         if function_name is None or source_file is None or line_number is None:
@@ -186,7 +195,9 @@ class Tracer:
 
         thread_id = threading.get_native_id()
 
-        # TODO: Replace this with trace generator
+        # TODO: Replace this with any other way to split traces
+        # An idea is to define a trace generator class or function
+        # that defined when a new trace must be created and whats its name
         if hasattr(image, 'filename'):
             try:
                 trace_name = Path(image.filename).relative_to(Path.cwd())
@@ -203,6 +214,7 @@ class Tracer:
             image,
             timestamp,
             previous_trace,
+            message=message,
             function_name=function_name,
             source_file=source_file,
             line_number=line_number,
