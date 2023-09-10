@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='carpeta',
-    version='0.1.0b0',
+    version='0.1.0b1',
     description="A tool to create print and play card games",
     long_description=open('README.md').read(),
     classifiers=[
