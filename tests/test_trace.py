@@ -1,3 +1,5 @@
+from functools import partial
+from multiprocessing import Pool
 from PIL import Image, ImageOps
 
 from carpeta import Tracer
@@ -61,3 +63,14 @@ def test_trace_image_file(random_image_file):
     assert tracer[0][1].image_file == image_file_1
     assert tracer[1][0].image_file == image_file_2
     assert tracer[1][1].image_file == image_file_2
+
+
+def test_trace_multiprocessing(random_image_file):
+    tracer = Tracer()
+    process_image = partial(tracer_process_image, tracer=tracer)
+
+    images = [Image.open(random_image_file()) for _ in range(1)]
+    with Pool(processes=4) as pool:
+        pool.map(process_image, images)
+
+    assert len(tracer) == 4
