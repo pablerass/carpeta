@@ -2,3 +2,4 @@
 bumpver
 ipython
 ipdb
+build
