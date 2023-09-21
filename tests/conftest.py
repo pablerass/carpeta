@@ -5,13 +5,12 @@ import random
 import shutil
 import tempfile
 
+from collections import namedtuple
 from pathlib import Path
 from PIL import Image
 
 
-from carpeta.card import CardImage
-from carpeta.measure import Size, STANDARD
-
+Size = namedtuple("Size", "width height")
 
 
 TEST_PATH = Path(__file__).resolve().parent
@@ -63,11 +62,3 @@ def random_image_file(random_image) -> Path:
 
     if temp_dir.exists():
         shutil.rmtree(temp_dir)
-
-
-@pytest.fixture
-def random_card_image(random_image) -> CardImage:
-    def create_temp_card_image(subpath: Path = None, /, size: Size = STANDARD):
-        return CardImage(random_image(subpath), size=size)
-
-    return create_temp_card_image
