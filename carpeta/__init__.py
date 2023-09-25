@@ -1,10 +1,10 @@
 """Package with trace image processing functionality."""
 from .trace import Tracer
+from .traceable import Traceable
 from .output import trace_output
 from .logging import ImageHandler
 
-# TODO: Extract all this to another repository and Python package
 
 __all__ = [
-    Tracer, trace_output, ImageHandler
+    Tracer, Traceable, trace_output, ImageHandler
 ]

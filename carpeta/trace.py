@@ -10,17 +10,22 @@ import threading
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
-from typing import Iterable
+from typing import Iterable, TypeVar
+
+from .traceable import Traceable
+
+
+T = TypeVar('T')
 
 
 class Record:
-    # TUNE: This could be applied to any type of object
-    def __init__(self, image: Image.Image | np.ndarray, timestamp: datetime = None, previous: Record = None, /,
+    def __init__(self, obj: T, /, timestamp: datetime = None, previous: Record = None,
                  message: str = None, function_name: str = None, source_file: str | Path = None,
                  line_number: int = None, thread_id: int = None):
-        if isinstance(image, np.ndarray):
-            image = Image.fromarray(cv.cvtColor(image, cv.COLOR_BGR2RGB))
-        self.__image = image
+        # TODO: Allow register more conversions
+        if isinstance(obj, np.ndarray):
+            obj = Image.fromarray(cv.cvtColor(obj, cv.COLOR_BGR2RGB))
+        self.__object = obj
 
         if timestamp is None:
             timestamp = datetime.now()
@@ -33,34 +38,24 @@ class Record:
         self.__previous = previous
         self.__message = message
 
-        try:
-            self.__image_file = Path(image.filename)
-        except AttributeError:
-            if previous is not None:
-                self.__image_file = previous.image_file
-            else:
-                self.__image_file = None
-
-        self.__data_uri_image = None
+        self.__object_uri = None
         self.__code_lines = None
 
     @property
-    def image(self) -> Image.Image:
-        return self.__image
+    def object(self) -> T:
+        return self.__object
 
     @property
-    def data_uri_image(self) -> bytes:
-        if self.__data_uri_image is None:
-            image_buffer = io.BytesIO()
-            self.image.save(image_buffer, format="PNG")
-            self.__data_uri_image = \
-                f"data:image/png;base64,{base64.b64encode(image_buffer.getvalue()).decode('UTF-8')}"
+    def object_uri(self) -> str:
+        if self.__object_uri is None:
+            # TODO: Allow register more exporters
+            if isinstance(self.__obj, Image):
+                object_buffer = io.BytesIO()
+                self.object.save(object_buffer, format="PNG")
+                self.__object_uri = \
+                    f"data:image/png;base64,{base64.b64encode(object_buffer.getvalue()).decode('UTF-8')}"
 
-        return self.__data_uri_image
-
-    @property
-    def image_file(self) -> Path | None:
-        return self.__image_file
+        return self.__object_uri
 
     @property
     def previous(self) -> Record | None:
@@ -118,7 +113,7 @@ class Record:
 
     def __getstate__(self) -> dict:
         record_dict = {
-            'image': self.data_uri_image,
+            'object': self.object_uri,
             # TODO: Review iso format and timezone management
             'timestamp': self.timestamp.isoformat(),
             'code_lines': self.code_lines
@@ -178,11 +173,10 @@ class Trace:
 
 class Tracer:
     def __init__(self,):
-        self.__last_thread_trace = {}
-        self.__traces = []
+        self.__traces = {}
 
-    def record(self, image: Image.Image | np.ndarray, /, timestamp: datetime = None,
-               message: str = None, function_name: str = None, source_file: str = None,
+    def record(self, traceable: Traceable, /, timestamp: datetime = None, message: str = None,
+               function_name: str = None, source_file: str = None,
                line_number: int = None) -> None:
         # TUNE: I tried to use frame info but logging does not return it,
         # maybe there is a better way
@@ -195,38 +189,29 @@ class Tracer:
 
         thread_id = threading.get_native_id()
 
-        # TODO: Replace this with any other way to split traces
-        # An idea is to define a trace generator class or function
-        # that defined when a new trace must be created and whats its name
-        if hasattr(image, 'filename'):
-            try:
-                trace_name = Path(image.filename).relative_to(Path.cwd())
-            except ValueError:
-                trace_name = Path(image.filename)
-            trace = Trace(name=trace_name.stem)
-            self.__traces.append(trace)
-            self.__last_thread_trace[thread_id] = trace
-            previous_trace = None
+        if traceable.trace_id in self.__traces:
+            previous_trace = self.__traces[traceable.trace_id][-1]
         else:
-            previous_trace = self.__last_thread_trace[thread_id][-1]
+            self.__traces[traceable.trace_id] = Trace(traceable.trace_id)
+            previous_trace = None
 
         record = Record(
-            image,
-            timestamp,
-            previous_trace,
+            traceable.value,
+            timestamp=timestamp,
+            previous=previous_trace,
             message=message,
             function_name=function_name,
             source_file=source_file,
             line_number=line_number,
             thread_id=thread_id
         )
-        self.__last_thread_trace[thread_id].add(record)
+        self.__traces[traceable.trace_id].add(record)
 
     def __len__(self):
         return len(self.__traces)
 
-    def __getitem__(self, key) -> Trace:
-        return self.__traces[key]
+    def __getitem__(self, trace_id) -> Trace:
+        return self.__traces[trace_id]
 
     def __iter__(self) -> Iterable[Trace]:
-        return (trace for trace in self.__traces)
+        return (trace for trace in self.__traces.values())
