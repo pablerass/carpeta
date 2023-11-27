@@ -1,7 +1,7 @@
 from datetime import datetime
 from logging import Handler, LogRecord, NOTSET
 
-from .trace import Tracer
+from .tracer import Tracer
 
 
 class ImageHandler(Handler):

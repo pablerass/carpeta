@@ -2,7 +2,7 @@ from functools import partial
 from multiprocessing import Pool
 from PIL import Image
 
-from carpeta import Tracer, Traceable
+from carpeta import ProcessTracer, Tracer, Traceable
 
 
 def tracer_process_image(image: Image.Image, tracer: Tracer):
@@ -13,8 +13,8 @@ def tracer_process_image(image: Image.Image, tracer: Tracer):
 
 
 def test_trace_multiprocessing(random_image_file):
-    tracer = Tracer()
-    process_image = partial(tracer_process_image, tracer=tracer)
+    tracer = ProcessTracer()
+    process_image = partial(tracer_process_image, tracer=tracer.remote_tracer)
 
     images = [Traceable(Image.open(random_image_file()), f"id{i}") for i in range(4)]
     with Pool(processes=4) as pool:

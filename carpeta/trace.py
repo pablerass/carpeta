@@ -3,16 +3,12 @@ from __future__ import annotations
 import base64
 import cv2 as cv
 import io
-import inspect
 import numpy as np
-import threading
 
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
 from typing import Iterable, TypeVar
-
-from .traceable import Traceable
 
 
 T = TypeVar('T')
@@ -169,49 +165,3 @@ class Trace:
             'name': self.name,
             'records': self.__records,
         }
-
-
-class Tracer:
-    def __init__(self,):
-        self.__traces = {}
-
-    def record(self, traceable: Traceable, /, timestamp: datetime = None, message: str = None,
-               function_name: str = None, source_file: str = None,
-               line_number: int = None) -> None:
-        # TUNE: I tried to use frame info but logging does not return it,
-        # maybe there is a better way
-        if function_name is None or source_file is None or line_number is None:
-            calling_frame = inspect.currentframe().f_back
-            calling_frame_info = inspect.getframeinfo(calling_frame)
-            function_name = calling_frame_info.function
-            source_file = calling_frame_info.filename
-            line_number = calling_frame_info.lineno
-
-        thread_id = threading.get_native_id()
-
-        if traceable.trace_id in self.__traces:
-            previous_trace = self.__traces[traceable.trace_id][-1]
-        else:
-            self.__traces[traceable.trace_id] = Trace(traceable.trace_id)
-            previous_trace = None
-
-        record = Record(
-            traceable.value,
-            timestamp=timestamp,
-            previous=previous_trace,
-            message=message,
-            function_name=function_name,
-            source_file=source_file,
-            line_number=line_number,
-            thread_id=thread_id
-        )
-        self.__traces[traceable.trace_id].add(record)
-
-    def __len__(self):
-        return len(self.__traces)
-
-    def __getitem__(self, trace_id) -> Trace:
-        return self.__traces[trace_id]
-
-    def __iter__(self) -> Iterable[Trace]:
-        return (trace for trace in self.__traces.values())
