@@ -2,7 +2,7 @@ import logging
 
 from PIL import Image
 
-from carpeta import Tracer, ImageHandler
+from carpeta import Tracer, ImageHandler, Traceable
 
 
 def logger_process_image(image: Image.Image):
@@ -21,13 +21,13 @@ def test_logging(random_image_file):
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
-    image = Image.open(random_image_file())
+    image = Traceable(Image.open(random_image_file()), 'id1')
     processed_image = logger_process_image(image)
 
-    assert tracer[0][0].image == image
-    assert tracer[0][0].function_name == 'logger_process_image'
-    assert tracer[0][0].line_number == 10
-    assert tracer[0][1].image == processed_image
-    assert tracer[0][1].function_name == 'logger_process_image'
-    assert tracer[0][1].line_number == 12
-    assert tracer[0][0].timestamp < tracer[0][1].timestamp
+    assert tracer['id1'][0].object == image.value
+    assert tracer['id1'][0].function_name == 'logger_process_image'
+    assert tracer['id1'][0].line_number == 10
+    assert tracer['id1'][1].object == processed_image.value
+    assert tracer['id1'][1].function_name == 'logger_process_image'
+    assert tracer['id1'][1].line_number == 12
+    assert tracer['id1'][0].timestamp < tracer['id1'][1].timestamp
