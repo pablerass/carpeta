@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='carpeta',
-    version='0.1.0a0',
+    version='v0.1.0a1',
     description="A library to trace image changes in its processing",
     long_description=open('README.md').read(),
     classifiers=[
