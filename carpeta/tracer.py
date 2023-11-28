@@ -60,25 +60,21 @@ class Tracer:
         return (trace for trace in self._traces.values())
 
 
-class _RemoteTracer(Tracer):
-    def __init__(self, queue: Queue):
-        super().__init__()
-
-        self.__queue = queue
-
-    def record(self, *args, **kwargs) -> tuple[str, Record]:
-        value = super().record(*args, **kwargs)
-        self.__queue.put(value)
-
-
 class ProcessTracer(Tracer):
+    class _RemoteTracer(Tracer):
+        def __init__(self, queue: Queue):
+            super().__init__()
+
+            self.__queue = queue
+
+        def record(self, *args, **kwargs) -> tuple[str, Record]:
+            value = super().record(*args, **kwargs)
+            self.__queue.put(value)
+
     def __init__(self):
         super().__init__()
 
-        self.__queue = None
         self.__remote_tracer = None
-        self.__is_closed = False
-        self.__receive_thread = None
 
     def __receive(self) -> None:
         while True:
@@ -106,6 +102,6 @@ class ProcessTracer(Tracer):
             self.__receive_thread.daemon = True
             self.__receive_thread.start()
 
-            self.__remote_tracer = _RemoteTracer(self.__queue)
+            self.__remote_tracer = self._RemoteTracer(self.__queue)
 
         return self.__remote_tracer
