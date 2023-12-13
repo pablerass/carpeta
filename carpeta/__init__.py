@@ -5,7 +5,7 @@ from .output import trace_output
 from .logging import ImageHandler
 
 
-__version__ = "v0.1.0a1"
+__version__ = "v0.1.0a2"
 
 
 __all__ = [
