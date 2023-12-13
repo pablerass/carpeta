@@ -5,6 +5,9 @@ from .output import trace_output
 from .logging import ImageHandler
 
 
+__version__ = "v0.1.0a1"
+
+
 __all__ = [
     Tracer, ProcessTracer, Traceable, trace_output, ImageHandler, TraceId,
     random_trace_id, extract_id, register_id_extractor
