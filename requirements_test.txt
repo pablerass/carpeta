@@ -1,4 +1,5 @@
 -r requirements.txt
+pytest-repeat==0.9.*
 pytest==7.4.*
 flake8==6.0.*
 coverage==7.2.*

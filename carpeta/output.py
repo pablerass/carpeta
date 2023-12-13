@@ -1,9 +1,56 @@
+import base64
+import cv2 as cv
+import io
 import nbformat as nbf
-import yaml
+import numpy as np
 
 from pathlib import Path
+from PIL import Image
+from typing import TypeVar, Callable, Any
 
 from .trace import Trace
+
+
+T = TypeVar('T')
+
+
+def _image_html_tag_creator(image: Image.Image) -> str:
+    image_buffer = io.BytesIO()
+    image.save(image_buffer, format="PNG")
+    image_uri = f"data:image/png;base64,{base64.b64encode(image_buffer.getvalue()).decode('UTF-8')}"
+    return f'<img src="{image_uri}" />'
+
+
+def _ndarray_image_html_tag_creator(image: np.ndarray) -> str:
+    return _image_html_tag_creator(Image.fromarray(cv.cvtColor(image, cv.COLOR_BGR2RGB)))
+
+
+def _default_html_tag_creator(value: Any) -> str:
+    return repr(value)
+
+
+# TUNE: Make this testable
+_HTML_TAG_CREATORS = {
+    Image.Image: _image_html_tag_creator,
+    np.ndarray: _ndarray_image_html_tag_creator
+}
+
+
+def _create_html_tag(value: Any) -> str:
+    if type(value) in _HTML_TAG_CREATORS:
+        return _HTML_TAG_CREATORS[type(value)](value)
+
+    for _type, function in _HTML_TAG_CREATORS.items():
+        if isinstance(value, _type):
+            return function(value)
+
+    return _default_html_tag_creator(value)
+
+
+def register_html_tag_creator(_type: type[T], html_tag_creator: Callable[T, str]):
+    _HTML_TAG_CREATORS.update({
+        _type: html_tag_creator
+    })
 
 
 def trace_html_output(traces: list[Trace], output_file: Path):
@@ -57,7 +104,7 @@ def trace_html_output(traces: list[Trace], output_file: Path):
             <h5>{record.message}</h5>""")
                 output_file.write(f"""
             <pre><code class="language-python line-numbers">{record.code}</code></pre>
-            <img src="{record.data_uri_image}" />
+            { _create_html_tag(record.value) }
             <br/>""")
             output_file.write("""
         </div>""")
@@ -68,9 +115,10 @@ def trace_html_output(traces: list[Trace], output_file: Path):
 </html>""")
 
 
-def trace_yaml_output(traces: list[Trace], output_file: Path):
-    with output_file.open('w') as o:
-        yaml.dump(list(traces), o)
+# TODO: Implement this in the right way
+# def trace_yaml_output(traces: list[Trace], output_file: Path):
+#     with output_file.open('w') as o:
+#         yaml.dump(list(traces), o)
 
 
 def trace_notebook_output(traces: list[Trace], output_dir: Path):
@@ -105,8 +153,8 @@ def trace_output(traces: list[Trace], output_path: Path | str):
     match output_path:
         case Path(suffix='.html'):
             trace_html_output(traces, output_path)
-        case Path(suffix='.yml') | Path(suffix='.yaml'):
-            trace_yaml_output(traces, output_path)
+        # case Path(suffix='.yml') | Path(suffix='.yaml'):
+        #     trace_yaml_output(traces, output_path)
         case Path(suffix=''):
             trace_notebook_output(traces, output_path)
         case _:
