@@ -2,7 +2,7 @@ from PIL import Image
 
 import pickle
 
-from carpeta import Traceable
+from carpeta import Traceable, register_id_extractor, extract_id
 
 
 def test_traceable_function():
@@ -52,3 +52,19 @@ def test_traceable_image(random_image_file):
 
     assert pickled_traceable_value.value == value
     assert pickled_traceable_value.trace_id == value.filename
+
+
+def test_extract_id_traceable(random_image_file):
+    value = Image.open(random_image_file())
+
+    traceable_value = Traceable(value, value.filename)
+
+    assert extract_id(traceable_value) == value.filename
+
+
+def test_extract_id_custom(random_image_file):
+    register_id_extractor(Image.Image, lambda x: x.filename)
+
+    value = Image.open(random_image_file())
+
+    assert extract_id(value) == value.filename

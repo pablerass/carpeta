@@ -12,9 +12,14 @@ class ImageHandler(Handler):
     def emit(self, record: LogRecord) -> None:
         timestamp = datetime.fromtimestamp(record.created)
 
+        trace_id = None
+        if hasattr(record, 'trace_id'):
+            trace_id = record.trace_id
+
         if hasattr(record, 'trace'):
             self.__tracer.record(
                 record.trace,
+                trace_id=trace_id,
                 timestamp=timestamp,
                 message=record.msg,
                 function_name=record.funcName,

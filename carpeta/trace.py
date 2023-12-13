@@ -1,13 +1,7 @@
 from __future__ import annotations
 
-import base64
-import cv2 as cv
-import io
-import numpy as np
-
 from datetime import datetime
 from pathlib import Path
-from PIL import Image
 from typing import Iterable, TypeVar
 
 
@@ -15,13 +9,10 @@ T = TypeVar('T')
 
 
 class Record:
-    def __init__(self, obj: T, /, timestamp: datetime = None, previous: Record = None,
+    def __init__(self, value: T, /, timestamp: datetime = None, previous: Record = None,
                  message: str = None, function_name: str = None, source_file: str | Path = None,
                  line_number: int = None, thread_id: int = None):
-        # TODO: Allow register more conversions
-        if isinstance(obj, np.ndarray):
-            obj = Image.fromarray(cv.cvtColor(obj, cv.COLOR_BGR2RGB))
-        self.__object = obj
+        self.__value = value
 
         if timestamp is None:
             timestamp = datetime.now()
@@ -34,24 +25,12 @@ class Record:
         self.__previous = previous
         self.__message = message
 
-        self.__object_uri = None
+        self.__value_uri = None
         self.__code_lines = None
 
     @property
-    def object(self) -> T:
-        return self.__object
-
-    @property
-    def object_uri(self) -> str:
-        if self.__object_uri is None:
-            # TODO: Allow register more exporters
-            if isinstance(self.__obj, Image):
-                object_buffer = io.BytesIO()
-                self.object.save(object_buffer, format="PNG")
-                self.__object_uri = \
-                    f"data:image/png;base64,{base64.b64encode(object_buffer.getvalue()).decode('UTF-8')}"
-
-        return self.__object_uri
+    def value(self) -> T:
+        return self.__value
 
     @property
     def previous(self) -> Record | None:
@@ -106,29 +85,6 @@ class Record:
     @property
     def code(self) -> str:
         return '\n'.join(self.code_lines)
-
-    def __getstate__(self) -> dict:
-        record_dict = {
-            'object': self.object_uri,
-            # TODO: Review iso format and timezone management
-            'timestamp': self.timestamp.isoformat(),
-            'code_lines': self.code_lines
-        }
-
-        if self.message is not None:
-            record_dict |= {'image_file': self.message}
-        if self.image_file is not None:
-            record_dict |= {'image_file': str(self.image_file)}
-        if self.function_name is not None:
-            record_dict |= {'function_name': self.function_name}
-        if self.source_file is not None:
-            record_dict |= {'source_file': self.source_file}
-        if self.line_number is not None:
-            record_dict |= {'line_number': self.line_number}
-        if self.thread_id is not None:
-            record_dict |= {'thread_id': self.thread_id}
-
-        return record_dict
 
 
 class Trace:
