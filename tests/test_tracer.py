@@ -94,13 +94,32 @@ def test_tracer_explicit_id(random_image_file):
 
 # There are race conditions that can make this test work if queue read thread is sutdonw properly by chance
 @pytest.mark.repeat(5)
-def test_trace_multiprocessing(random_image_file):
+def test_trace_process_tracer_with_multiprocessing(random_image_file):
     tracer = ProcessTracer()
     process_image = partial(tracer_process_image, tracer=tracer.remote_tracer)
 
     images = [Traceable(Image.open(random_image_file()), f"id{i}") for i in range(4)]
     with Pool(processes=4) as pool:
         pool.map(process_image, images)
+
+    tracer.wait_and_stop()
+
+    assert len(tracer) == 4
+    for i in range(len(tracer)):
+        assert tracer[f'id{i}'][0].function_name == 'tracer_process_image'
+        assert tracer[f'id{i}'][0].line_number == 11
+        assert tracer[f'id{i}'][1].function_name == 'tracer_process_image'
+        assert tracer[f'id{i}'][1].line_number == 13
+        assert tracer[f'id{i}'][0].timestamp < tracer[f'id{i}'][1].timestamp
+
+
+def test_trace_process_tracer_without_multiprocessing(random_image_file):
+    tracer = ProcessTracer()
+    process_image = partial(tracer_process_image, tracer=tracer)
+
+    images = [Traceable(Image.open(random_image_file()), f"id{i}") for i in range(4)]
+    for image in images:
+        process_image(image)
 
     tracer.wait_and_stop()
 
