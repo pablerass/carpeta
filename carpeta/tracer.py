@@ -98,6 +98,7 @@ class ProcessTracer(Tracer):
         super().__init__()
 
         self.__remote_tracer = None
+        self.__receive_thread = None
 
     def __receive(self) -> None:
         while True:
@@ -132,5 +133,6 @@ class ProcessTracer(Tracer):
 
     # TUNE: I would want to find another way to ensure all content is properly received before shutdown
     def wait_and_stop(self) -> None:
-        self.__queue.put('STOP')
-        self.__receive_thread.join()
+        if self.__receive_thread is not None:
+            self.__queue.put('STOP')
+            self.__receive_thread.join()
